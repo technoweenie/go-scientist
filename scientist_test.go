@@ -1,10 +1,12 @@
 package scientist
 
 import (
+	"reflect"
+	"sort"
 	"testing"
 )
 
-func TestRun(t *testing.T) {
+func basicExperiment() *Experiment {
 	e := New("basic")
 	e.Use(func() (interface{}, error) {
 		return 1, nil
@@ -18,6 +20,14 @@ func TestRun(t *testing.T) {
 		return 3, nil
 	})
 
+	e.Behavior("correct", func() (interface{}, error) {
+		return 1, nil
+	})
+	return e
+}
+
+func TestRun(t *testing.T) {
+	e := basicExperiment()
 	r := Run(e)
 
 	if r.Control.Name != "control" {
@@ -32,9 +42,9 @@ func TestRun(t *testing.T) {
 		t.Errorf("Bad value for 'control': %v", r.Control.Value)
 	}
 
-	if candidates := len(r.Candidates); candidates != 2 {
-		t.Errorf("Wrong number of candidates: %d", candidates)
-	}
+	assertObservationNames(t, "candidate", r.Candidates, []string{"candidate", "correct", "three"})
+	assertObservationNames(t, "ignored", r.Ignored, []string{})
+	assertObservationNames(t, "mismatched", r.Mismatched, []string{"candidate", "three"})
 
 	candidatesMap := make(map[string]Observation, len(r.Candidates))
 	for _, o := range r.Candidates {
@@ -66,4 +76,49 @@ func TestRun(t *testing.T) {
 			t.Errorf("Bad value for 'three': %v", three.Value)
 		}
 	}
+
+	correct, ok := candidatesMap["correct"]
+	if !ok {
+		t.Errorf("No behavior 'correct'")
+	} else {
+		if correct.Err != nil {
+			t.Errorf("Error for 'correct': %v", correct.Err)
+		}
+
+		if correct.Value != 1 {
+			t.Errorf("Bad value for 'correct': %v", correct.Value)
+		}
+	}
+}
+
+func TestIgnore(t *testing.T) {
+	e := basicExperiment()
+
+	e.Ignore(func(candidate, control interface{}) bool {
+		return control == 3
+	})
+
+	r := Run(e)
+
+	assertObservationNames(t, "candidate", r.Candidates, []string{"candidate", "correct", "three"})
+	assertObservationNames(t, "ignored", r.Ignored, []string{"three"})
+	assertObservationNames(t, "mismatched", r.Mismatched, []string{"candidate"})
+}
+
+func assertObservationNames(t *testing.T, key string, obs []Observation, expected []string) {
+	actual := observationNames(obs)
+	if reflect.DeepEqual(expected, actual) {
+		return
+	}
+
+	t.Errorf("Expected %s observations: %v, got: %v", key, expected, actual)
+}
+
+func observationNames(obs []Observation) []string {
+	names := make([]string, len(obs))
+	for i, o := range obs {
+		names[i] = o.Name
+	}
+	sort.Strings(names)
+	return names
 }

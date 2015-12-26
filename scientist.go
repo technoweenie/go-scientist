@@ -1,6 +1,9 @@
 package scientist
 
-import "fmt"
+import (
+	"fmt"
+	"reflect"
+)
 
 const (
 	controlBehavior   = "control"
@@ -10,15 +13,17 @@ const (
 func New(name string) *Experiment {
 	return &Experiment{
 		Name:      name,
-		behaviors: make(map[string]Behavior),
+		behaviors: make(map[string]behaviorFunc),
 	}
 }
 
-type Behavior func() (interface{}, error)
+type behaviorFunc func() (value interface{}, err error)
+type ignoreFunc func(candidate, control interface{}) bool
 
 type Experiment struct {
 	Name      string
-	behaviors map[string]Behavior
+	behaviors map[string]behaviorFunc
+	ignores   []ignoreFunc
 }
 
 func (e *Experiment) Use(fn func() (interface{}, error)) {
@@ -30,7 +35,11 @@ func (e *Experiment) Try(fn func() (interface{}, error)) {
 }
 
 func (e *Experiment) Behavior(name string, fn func() (interface{}, error)) {
-	e.behaviors[name] = Behavior(fn)
+	e.behaviors[name] = behaviorFunc(fn)
+}
+
+func (e *Experiment) Ignore(fn func(candidate, control interface{}) bool) {
+	e.ignores = append(e.ignores, ignoreFunc(fn))
 }
 
 func (e *Experiment) Run() (interface{}, error) {
@@ -40,18 +49,42 @@ func (e *Experiment) Run() (interface{}, error) {
 
 func Run(e *Experiment) Result {
 	r := Result{Experiment: e}
+	numCandidates := len(e.behaviors) - 1
 	r.Control = observe(e, controlBehavior, e.behaviors[controlBehavior])
-	r.Candidates = make([]Observation, len(e.behaviors)-1)
+	r.Candidates = make([]Observation, numCandidates)
+	r.Ignored = make([]Observation, 0, numCandidates)
+	r.Mismatched = make([]Observation, 0, numCandidates)
+
 	i := 0
 	for name, b := range e.behaviors {
 		if name == controlBehavior {
 			continue
 		}
-		r.Candidates[i] = observe(e, name, b)
+		c := observe(e, name, b)
+		r.Candidates[i] = c
+
+		if !r.Control.Equals(c) {
+			if ignoring(e, r.Control, c) {
+				r.Ignored = append(r.Ignored, c)
+			} else {
+				r.Mismatched = append(r.Mismatched, c)
+			}
+		}
+
 		i += 1
 	}
 
 	return r
+}
+
+func ignoring(e *Experiment, control, candidate Observation) bool {
+	for _, i := range e.ignores {
+		if i(control.Value, candidate.Value) {
+			return true
+		}
+	}
+
+	return false
 }
 
 type Observation struct {
@@ -61,7 +94,11 @@ type Observation struct {
 	Err        error
 }
 
-func observe(e *Experiment, name string, b Behavior) Observation {
+func (o Observation) Equals(other Observation) bool {
+	return reflect.DeepEqual(o.Value, other.Value)
+}
+
+func observe(e *Experiment, name string, b behaviorFunc) Observation {
 	o := Observation{Experiment: e, Name: name}
 	if b == nil {
 		b = e.behaviors[name]
