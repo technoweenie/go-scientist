@@ -19,7 +19,7 @@ func New(name string) *Experiment {
 }
 
 type behaviorFunc func() (value interface{}, err error)
-type valueFunc func(candidate, control interface{}) bool
+type valueFunc func(control, candidate interface{}) bool
 
 type Experiment struct {
 	Name       string
@@ -40,11 +40,11 @@ func (e *Experiment) Behavior(name string, fn func() (interface{}, error)) {
 	e.behaviors[name] = behaviorFunc(fn)
 }
 
-func (e *Experiment) Compare(fn func(candidate, control interface{}) bool) {
+func (e *Experiment) Compare(fn func(control, candidate interface{}) bool) {
 	e.comparator = valueFunc(fn)
 }
 
-func (e *Experiment) Ignore(fn func(candidate, control interface{}) bool) {
+func (e *Experiment) Ignore(fn func(control, candidate interface{}) bool) {
 	e.ignores = append(e.ignores, valueFunc(fn))
 }
 

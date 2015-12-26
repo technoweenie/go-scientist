@@ -93,8 +93,8 @@ func TestRun(t *testing.T) {
 
 func TestIgnore(t *testing.T) {
 	e := basicExperiment()
-	e.Ignore(func(candidate, control interface{}) bool {
-		return control == 3
+	e.Ignore(func(control, candidate interface{}) bool {
+		return candidate == 3
 	})
 	r := Run(e)
 
@@ -105,8 +105,8 @@ func TestIgnore(t *testing.T) {
 
 func TestCompare(t *testing.T) {
 	e := basicExperiment()
-	e.Compare(func(candidate, control interface{}) bool {
-		return candidate == 1 && control == 3
+	e.Compare(func(control, candidate interface{}) bool {
+		return control == 1 && candidate == 3
 	})
 	r := Run(e)
 
@@ -117,11 +117,11 @@ func TestCompare(t *testing.T) {
 
 func TestCompareAndIgnore(t *testing.T) {
 	e := basicExperiment()
-	e.Compare(func(candidate, control interface{}) bool {
-		return candidate == 1 && control == 3
+	e.Compare(func(control, candidate interface{}) bool {
+		return control == 1 && candidate == 3
 	})
-	e.Ignore(func(candidate, control interface{}) bool {
-		return control == 1
+	e.Ignore(func(control, candidate interface{}) bool {
+		return candidate == 1
 	})
 	r := Run(e)
 
