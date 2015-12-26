@@ -12,18 +12,20 @@ const (
 
 func New(name string) *Experiment {
 	return &Experiment{
-		Name:      name,
-		behaviors: make(map[string]behaviorFunc),
+		Name:       name,
+		behaviors:  make(map[string]behaviorFunc),
+		comparator: reflect.DeepEqual,
 	}
 }
 
 type behaviorFunc func() (value interface{}, err error)
-type ignoreFunc func(candidate, control interface{}) bool
+type valueFunc func(candidate, control interface{}) bool
 
 type Experiment struct {
-	Name      string
-	behaviors map[string]behaviorFunc
-	ignores   []ignoreFunc
+	Name       string
+	behaviors  map[string]behaviorFunc
+	ignores    []valueFunc
+	comparator valueFunc
 }
 
 func (e *Experiment) Use(fn func() (interface{}, error)) {
@@ -38,8 +40,12 @@ func (e *Experiment) Behavior(name string, fn func() (interface{}, error)) {
 	e.behaviors[name] = behaviorFunc(fn)
 }
 
+func (e *Experiment) Compare(fn func(candidate, control interface{}) bool) {
+	e.comparator = valueFunc(fn)
+}
+
 func (e *Experiment) Ignore(fn func(candidate, control interface{}) bool) {
-	e.ignores = append(e.ignores, ignoreFunc(fn))
+	e.ignores = append(e.ignores, valueFunc(fn))
 }
 
 func (e *Experiment) Run() (interface{}, error) {
@@ -63,7 +69,7 @@ func Run(e *Experiment) Result {
 		c := observe(e, name, b)
 		r.Candidates[i] = c
 
-		if !r.Control.Equals(c) {
+		if mismatching(e, r.Control, c) {
 			if ignoring(e, r.Control, c) {
 				r.Ignored = append(r.Ignored, c)
 			} else {
@@ -75,6 +81,10 @@ func Run(e *Experiment) Result {
 	}
 
 	return r
+}
+
+func mismatching(e *Experiment, control, candidate Observation) bool {
+	return !e.comparator(control.Value, candidate.Value)
 }
 
 func ignoring(e *Experiment, control, candidate Observation) bool {
@@ -92,10 +102,6 @@ type Observation struct {
 	Name       string
 	Value      interface{}
 	Err        error
-}
-
-func (o Observation) Equals(other Observation) bool {
-	return reflect.DeepEqual(o.Value, other.Value)
 }
 
 func observe(e *Experiment, name string, b behaviorFunc) Observation {

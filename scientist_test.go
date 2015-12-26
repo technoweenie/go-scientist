@@ -93,15 +93,40 @@ func TestRun(t *testing.T) {
 
 func TestIgnore(t *testing.T) {
 	e := basicExperiment()
-
 	e.Ignore(func(candidate, control interface{}) bool {
 		return control == 3
 	})
-
 	r := Run(e)
 
 	assertObservationNames(t, "candidate", r.Candidates, []string{"candidate", "correct", "three"})
 	assertObservationNames(t, "ignored", r.Ignored, []string{"three"})
+	assertObservationNames(t, "mismatched", r.Mismatched, []string{"candidate"})
+}
+
+func TestCompare(t *testing.T) {
+	e := basicExperiment()
+	e.Compare(func(candidate, control interface{}) bool {
+		return candidate == 1 && control == 3
+	})
+	r := Run(e)
+
+	assertObservationNames(t, "candidate", r.Candidates, []string{"candidate", "correct", "three"})
+	assertObservationNames(t, "ignored", r.Ignored, []string{})
+	assertObservationNames(t, "mismatched", r.Mismatched, []string{"candidate", "correct"})
+}
+
+func TestCompareAndIgnore(t *testing.T) {
+	e := basicExperiment()
+	e.Compare(func(candidate, control interface{}) bool {
+		return candidate == 1 && control == 3
+	})
+	e.Ignore(func(candidate, control interface{}) bool {
+		return control == 1
+	})
+	r := Run(e)
+
+	assertObservationNames(t, "candidate", r.Candidates, []string{"candidate", "correct", "three"})
+	assertObservationNames(t, "ignored", r.Ignored, []string{"correct"})
 	assertObservationNames(t, "mismatched", r.Mismatched, []string{"candidate"})
 }
 
