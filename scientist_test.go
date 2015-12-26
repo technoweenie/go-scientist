@@ -1,50 +1,69 @@
 package scientist
 
 import (
-  "testing"
+	"testing"
 )
 
 func TestRun(t *testing.T) {
-  e := New("run")
-  e.Use(func () (interface{}, error) {
-    return 1, nil
-  })
+	e := New("basic")
+	e.Use(func() (interface{}, error) {
+		return 1, nil
+	})
 
-  e.Try(func () (interface{}, error) {
-    return 2, nil
-  })
+	e.Try(func() (interface{}, error) {
+		return 2, nil
+	})
 
-  value, err := e.Run()
-  if err != nil {
-    t.Errorf("Expected no error, got: %v", err)
-  }
+	e.Behavior("three", func() (interface{}, error) {
+		return 3, nil
+	})
 
-  if value != 1 {
-    t.Errorf("Bad value: %v", value)
-  }
-}
+	r := Run(e)
 
-func TestResult(t *testing.T) {
-  e := New("basic")
-  e.Use(func () (interface{}, error) {
-    return 1, nil
-  })
+	if r.Control.Name != "control" {
+		t.Errorf("Unexpected control observation name: %q", r.Control.Name)
+	}
 
-  e.Try(func () (interface{}, error) {
-    return 2, nil
-  })
+	if r.Control.Err != nil {
+		t.Errorf("Expected no error, got: %v", r.Control.Err)
+	}
 
-  r := e.Result()
+	if r.Control.Value != 1 {
+		t.Errorf("Bad value for 'control': %v", r.Control.Value)
+	}
 
-  if r.Control.Name != "control" {
-    t.Errorf("Unexpected control observation name: %q", r.Control.Name)
-  }
+	if candidates := len(r.Candidates); candidates != 2 {
+		t.Errorf("Wrong number of candidates: %d", candidates)
+	}
 
-  if r.Control.Err != nil {
-    t.Errorf("Expected no error, got: %v", r.Control.Err)
-  }
+	candidatesMap := make(map[string]Observation, len(r.Candidates))
+	for _, o := range r.Candidates {
+		candidatesMap[o.Name] = o
+	}
 
-  if r.Control.Value != 1 {
-    t.Errorf("Bad value: %v", r.Control.Value)
-  }
+	two, ok := candidatesMap["candidate"]
+	if !ok {
+		t.Errorf("No behavior 'candidate'")
+	} else {
+		if two.Err != nil {
+			t.Errorf("Error for 'candidate': %v", two.Err)
+		}
+
+		if two.Value != 2 {
+			t.Errorf("Bad value for 'candidate': %v", two.Value)
+		}
+	}
+
+	three, ok := candidatesMap["three"]
+	if !ok {
+		t.Errorf("No behavior 'three'")
+	} else {
+		if three.Err != nil {
+			t.Errorf("Error for 'three': %v", three.Err)
+		}
+
+		if three.Value != 3 {
+			t.Errorf("Bad value for 'three': %v", three.Value)
+		}
+	}
 }

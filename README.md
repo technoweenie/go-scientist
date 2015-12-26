@@ -17,12 +17,12 @@ expr.Clean(func(value interface{}) (interface{}, error) {
   return nil, nil
 })
 
-expr.IgnoreIf(func(control, candidate interface{}) bool {
+expr.Ignore(func(control, candidate interface{}) bool {
   return false
 })
 
 expr.RunIf(func() bool {
-  
+
 })
 
 expr.SetContext("key", interface{})
