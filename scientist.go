@@ -30,6 +30,7 @@ type valueFunc func(control, candidate interface{}) (bool, error)
 
 type Experiment struct {
 	Name       string
+	Context    map[string]string
 	behaviors  map[string]behaviorFunc
 	ignores    []valueFunc
 	comparator valueFunc
