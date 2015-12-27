@@ -3,6 +3,7 @@ package scientist
 import (
 	"fmt"
 	"reflect"
+	"time"
 )
 
 const (
@@ -125,20 +126,29 @@ func ignoring(e *Experiment, control, candidate Observation) (bool, int, error) 
 type Observation struct {
 	Experiment *Experiment
 	Name       string
+	Started    time.Time
+	Runtime    time.Duration
 	Value      interface{}
 	Err        error
 }
 
 func observe(e *Experiment, name string, b behaviorFunc) Observation {
-	o := Observation{Experiment: e, Name: name}
+	o := Observation{
+		Experiment: e,
+		Name:       name,
+		Started:    time.Now(),
+	}
+
 	if b == nil {
 		b = e.behaviors[name]
 	}
 
 	if b == nil {
 		o.Err = fmt.Errorf("Behavior %q not found for experiment %q", name, e.Name)
+		o.Runtime = time.Since(o.Started)
 	} else {
 		v, err := b()
+		o.Runtime = time.Since(o.Started)
 		o.Value = v
 		o.Err = err
 	}
