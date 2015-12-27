@@ -61,22 +61,14 @@ func (e *Experiment) Enabled() (bool, error) {
 	return e.runcheck()
 }
 
-func defaultComparator(candidate, control interface{}) (bool, error) {
-	return reflect.DeepEqual(candidate, control), nil
-}
-
-func defaultRunCheck() (bool, error) {
-	return true, nil
-}
-
-func Run(e *Experiment) (interface{}, error) {
+func (e *Experiment) Run() (interface{}, error) {
 	enabled, err := e.Enabled()
 	if err != nil {
 		return nil, err
 	}
 
 	if enabled {
-		r := RunExperiment(e)
+		r := Run(e)
 		return r.Control.Value, r.Control.Err
 	}
 
@@ -88,7 +80,15 @@ func Run(e *Experiment) (interface{}, error) {
 	return behavior()
 }
 
-func RunExperiment(e *Experiment) Result {
+func defaultComparator(candidate, control interface{}) (bool, error) {
+	return reflect.DeepEqual(candidate, control), nil
+}
+
+func defaultRunCheck() (bool, error) {
+	return true, nil
+}
+
+func Run(e *Experiment) Result {
 	r := Result{Experiment: e}
 	numCandidates := len(e.behaviors) - 1
 	r.Control = observe(e, controlBehavior, e.behaviors[controlBehavior])
