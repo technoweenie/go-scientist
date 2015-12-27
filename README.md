@@ -21,7 +21,7 @@ expr.Ignore(func(control, candidate interface{}) (bool, error) {
   return false, nil
 })
 
-expr.RunIf(func() bool {
+expr.RunIf(func() (bool, error) {
 
 })
 

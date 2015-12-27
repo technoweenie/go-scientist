@@ -28,7 +28,7 @@ func basicExperiment() *Experiment {
 
 func TestRun(t *testing.T) {
 	e := basicExperiment()
-	r := Run(e)
+	r := RunExperiment(e)
 	if len(r.Errors) != 0 {
 		t.Errorf("Unexpected experiment errors: %v", r.Errors)
 	}
@@ -99,7 +99,7 @@ func TestIgnore(t *testing.T) {
 	e.Ignore(func(control, candidate interface{}) (bool, error) {
 		return candidate == 3, nil
 	})
-	r := Run(e)
+	r := RunExperiment(e)
 	if len(r.Errors) != 0 {
 		t.Errorf("Unexpected experiment errors: %v", r.Errors)
 	}
@@ -115,7 +115,7 @@ func TestCompare(t *testing.T) {
 		return control == 1 && candidate == 3, nil
 	})
 
-	r := Run(e)
+	r := RunExperiment(e)
 	if len(r.Errors) != 0 {
 		t.Errorf("Unexpected experiment errors: %v", r.Errors)
 	}
@@ -133,7 +133,7 @@ func TestCompareAndIgnore(t *testing.T) {
 	e.Ignore(func(control, candidate interface{}) (bool, error) {
 		return candidate == 1, nil
 	})
-	r := Run(e)
+	r := RunExperiment(e)
 	if len(r.Errors) != 0 {
 		t.Errorf("Unexpected experiment errors: %v", r.Errors)
 	}

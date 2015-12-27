@@ -11,22 +11,18 @@ const (
 	candidateBehavior = "candidate"
 )
 
-var (
-	defaultComparator = func(candidate, control interface{}) (bool, error) {
-		return reflect.DeepEqual(candidate, control), nil
-	}
-)
-
 func New(name string) *Experiment {
 	return &Experiment{
 		Name:       name,
 		behaviors:  make(map[string]behaviorFunc),
 		comparator: defaultComparator,
+		runcheck:   defaultRunCheck,
 	}
 }
 
 type behaviorFunc func() (value interface{}, err error)
 type valueFunc func(control, candidate interface{}) (bool, error)
+type checkFunc func() (bool, error)
 
 type Experiment struct {
 	Name       string
@@ -34,6 +30,7 @@ type Experiment struct {
 	behaviors  map[string]behaviorFunc
 	ignores    []valueFunc
 	comparator valueFunc
+	runcheck   checkFunc
 }
 
 func (e *Experiment) Use(fn func() (interface{}, error)) {
@@ -56,12 +53,42 @@ func (e *Experiment) Ignore(fn func(control, candidate interface{}) (bool, error
 	e.ignores = append(e.ignores, valueFunc(fn))
 }
 
-func (e *Experiment) Run() (interface{}, error) {
-	r := Run(e)
-	return r.Control.Value, r.Control.Err
+func (e *Experiment) RunIf(fn func() (bool, error)) {
+	e.runcheck = checkFunc(fn)
 }
 
-func Run(e *Experiment) Result {
+func (e *Experiment) Enabled() (bool, error) {
+	return e.runcheck()
+}
+
+func defaultComparator(candidate, control interface{}) (bool, error) {
+	return reflect.DeepEqual(candidate, control), nil
+}
+
+func defaultRunCheck() (bool, error) {
+	return true, nil
+}
+
+func Run(e *Experiment) (interface{}, error) {
+	enabled, err := e.Enabled()
+	if err != nil {
+		return nil, err
+	}
+
+	if enabled {
+		r := RunExperiment(e)
+		return r.Control.Value, r.Control.Err
+	}
+
+	behavior, ok := e.behaviors[controlBehavior]
+	if !ok {
+		return nil, behaviorNotFound(e, controlBehavior)
+	}
+
+	return behavior()
+}
+
+func RunExperiment(e *Experiment) Result {
 	r := Result{Experiment: e}
 	numCandidates := len(e.behaviors) - 1
 	r.Control = observe(e, controlBehavior, e.behaviors[controlBehavior])
@@ -74,6 +101,7 @@ func Run(e *Experiment) Result {
 		if name == controlBehavior {
 			continue
 		}
+
 		c := observe(e, name, b)
 		r.Candidates[i] = c
 		i += 1
@@ -133,6 +161,10 @@ type Observation struct {
 	Err        error
 }
 
+func behaviorNotFound(e *Experiment, name string) error {
+	return fmt.Errorf("Behavior %q not found for experiment %q", name, e.Name)
+}
+
 func observe(e *Experiment, name string, b behaviorFunc) Observation {
 	o := Observation{
 		Experiment: e,
@@ -145,7 +177,7 @@ func observe(e *Experiment, name string, b behaviorFunc) Observation {
 	}
 
 	if b == nil {
-		o.Err = fmt.Errorf("Behavior %q not found for experiment %q", name, e.Name)
+		o.Err = behaviorNotFound(e, name)
 		o.Runtime = time.Since(o.Started)
 	} else {
 		v, err := b()
