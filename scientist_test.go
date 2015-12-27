@@ -29,6 +29,9 @@ func basicExperiment() *Experiment {
 func TestRun(t *testing.T) {
 	e := basicExperiment()
 	r := Run(e)
+	if len(r.Errors) != 0 {
+		t.Errorf("Unexpected experiment errors: %v", r.Errors)
+	}
 
 	if r.Control.Name != "control" {
 		t.Errorf("Unexpected control observation name: %q", r.Control.Name)
@@ -93,10 +96,13 @@ func TestRun(t *testing.T) {
 
 func TestIgnore(t *testing.T) {
 	e := basicExperiment()
-	e.Ignore(func(control, candidate interface{}) bool {
-		return candidate == 3
+	e.Ignore(func(control, candidate interface{}) (bool, error) {
+		return candidate == 3, nil
 	})
 	r := Run(e)
+	if len(r.Errors) != 0 {
+		t.Errorf("Unexpected experiment errors: %v", r.Errors)
+	}
 
 	assertObservationNames(t, "candidate", r.Candidates, []string{"candidate", "correct", "three"})
 	assertObservationNames(t, "ignored", r.Ignored, []string{"three"})
@@ -105,10 +111,14 @@ func TestIgnore(t *testing.T) {
 
 func TestCompare(t *testing.T) {
 	e := basicExperiment()
-	e.Compare(func(control, candidate interface{}) bool {
-		return control == 1 && candidate == 3
+	e.Compare(func(control, candidate interface{}) (bool, error) {
+		return control == 1 && candidate == 3, nil
 	})
+
 	r := Run(e)
+	if len(r.Errors) != 0 {
+		t.Errorf("Unexpected experiment errors: %v", r.Errors)
+	}
 
 	assertObservationNames(t, "candidate", r.Candidates, []string{"candidate", "correct", "three"})
 	assertObservationNames(t, "ignored", r.Ignored, []string{})
@@ -117,13 +127,16 @@ func TestCompare(t *testing.T) {
 
 func TestCompareAndIgnore(t *testing.T) {
 	e := basicExperiment()
-	e.Compare(func(control, candidate interface{}) bool {
-		return control == 1 && candidate == 3
+	e.Compare(func(control, candidate interface{}) (bool, error) {
+		return control == 1 && candidate == 3, nil
 	})
-	e.Ignore(func(control, candidate interface{}) bool {
-		return candidate == 1
+	e.Ignore(func(control, candidate interface{}) (bool, error) {
+		return candidate == 1, nil
 	})
 	r := Run(e)
+	if len(r.Errors) != 0 {
+		t.Errorf("Unexpected experiment errors: %v", r.Errors)
+	}
 
 	assertObservationNames(t, "candidate", r.Candidates, []string{"candidate", "correct", "three"})
 	assertObservationNames(t, "ignored", r.Ignored, []string{"correct"})

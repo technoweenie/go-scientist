@@ -9,16 +9,16 @@ expr.Try(func() (interface{}, error) {
   return true, nil
 })
 
-expr.Compare(func(control, candidate interface{}) bool {
-  return control == candidate
+expr.Compare(func(control, candidate interface{}) (bool, error) {
+  return control == candidate, nil
 })
 
 expr.Clean(func(value interface{}) (interface{}, error) {
   return nil, nil
 })
 
-expr.Ignore(func(control, candidate interface{}) bool {
-  return false
+expr.Ignore(func(control, candidate interface{}) (bool, error) {
+  return false, nil
 })
 
 expr.RunIf(func() bool {
