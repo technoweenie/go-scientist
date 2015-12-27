@@ -74,6 +74,7 @@ func Run(e *Experiment) Result {
 		}
 		c := observe(e, name, b)
 		r.Candidates[i] = c
+		i += 1
 
 		mismatched, err := mismatching(e, r.Control, c)
 		if err != nil {
@@ -81,21 +82,21 @@ func Run(e *Experiment) Result {
 			r.Errors = append(r.Errors, &resultError{"compare", name, -1, err})
 		}
 
-		if mismatched {
-			ignored, idx, err := ignoring(e, r.Control, c)
-			if err != nil {
-				ignored = false
-				r.Errors = append(r.Errors, &resultError{"ignore", name, idx, err})
-			}
-
-			if ignored {
-				r.Ignored = append(r.Ignored, c)
-			} else {
-				r.Mismatched = append(r.Mismatched, c)
-			}
+		if !mismatched {
+			continue
 		}
 
-		i += 1
+		ignored, idx, err := ignoring(e, r.Control, c)
+		if err != nil {
+			ignored = false
+			r.Errors = append(r.Errors, &resultError{"ignore", name, idx, err})
+		}
+
+		if ignored {
+			r.Ignored = append(r.Ignored, c)
+		} else {
+			r.Mismatched = append(r.Mismatched, c)
+		}
 	}
 
 	return r
