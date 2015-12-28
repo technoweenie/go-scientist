@@ -61,12 +61,8 @@ func (e *Experiment) BeforeRun(fn func() error) {
 	e.beforeRun = callbackFunc(fn)
 }
 
-func (e *Experiment) Enabled() (bool, error) {
-	return e.runcheck()
-}
-
 func (e *Experiment) Run() (interface{}, error) {
-	enabled, err := e.Enabled()
+	enabled, err := e.runcheck()
 	if err != nil {
 		enabled = true
 		e.errorReporter(ResultError{"run_if", "experiment", -1, err})
