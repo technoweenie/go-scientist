@@ -10,8 +10,30 @@ const (
 	candidateBehavior = "candidate"
 )
 
+type Observation struct {
+	Experiment *Experiment
+	Name       string
+	Started    time.Time
+	Runtime    time.Duration
+	Value      interface{}
+	Err        error
+}
+
+type Result struct {
+	Experiment *Experiment
+	Control    Observation
+	Candidates []Observation
+	Ignored    []Observation
+	Mismatched []Observation
+	Errors     []ResultError
+}
+
 func Run(e *Experiment) Result {
 	r := Result{Experiment: e}
+	if err := e.beforeRun(); err != nil {
+		r.Errors = append(r.Errors, ResultError{"before_run", "experiment", -1, err})
+	}
+
 	numCandidates := len(e.behaviors) - 1
 	r.Control = observe(e, controlBehavior, e.behaviors[controlBehavior])
 	r.Candidates = make([]Observation, numCandidates)
@@ -31,7 +53,7 @@ func Run(e *Experiment) Result {
 		mismatched, err := mismatching(e, r.Control, c)
 		if err != nil {
 			mismatched = true
-			r.Errors = append(r.Errors, resultError{"compare", name, -1, err})
+			r.Errors = append(r.Errors, ResultError{"compare", name, -1, err})
 		}
 
 		if !mismatched {
@@ -41,7 +63,7 @@ func Run(e *Experiment) Result {
 		ignored, idx, err := ignoring(e, r.Control, c)
 		if err != nil {
 			ignored = false
-			r.Errors = append(r.Errors, resultError{"ignore", name, idx, err})
+			r.Errors = append(r.Errors, ResultError{"ignore", name, idx, err})
 		}
 
 		if ignored {
@@ -49,6 +71,14 @@ func Run(e *Experiment) Result {
 		} else {
 			r.Mismatched = append(r.Mismatched, c)
 		}
+	}
+
+	if err := e.publisher(r); err != nil {
+		r.Errors = append(r.Errors, ResultError{"publish", "experiment", -1, err})
+	}
+
+	if len(r.Errors) > 0 {
+		e.errorReporter(r.Errors...)
 	}
 
 	return r
@@ -72,15 +102,6 @@ func ignoring(e *Experiment, control, candidate Observation) (bool, int, error) 
 	}
 
 	return false, -1, nil
-}
-
-type Observation struct {
-	Experiment *Experiment
-	Name       string
-	Started    time.Time
-	Runtime    time.Duration
-	Value      interface{}
-	Err        error
 }
 
 func behaviorNotFound(e *Experiment, name string) error {
@@ -111,22 +132,13 @@ func observe(e *Experiment, name string, b behaviorFunc) Observation {
 	return o
 }
 
-type resultError struct {
+type ResultError struct {
 	Operation    string
 	BehaviorName string
 	Index        int
 	Err          error
 }
 
-func (e resultError) Error() string {
+func (e ResultError) Error() string {
 	return e.Err.Error()
-}
-
-type Result struct {
-	Experiment *Experiment
-	Control    Observation
-	Candidates []Observation
-	Ignored    []Observation
-	Mismatched []Observation
-	Errors     []resultError
 }
