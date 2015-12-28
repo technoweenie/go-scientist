@@ -79,7 +79,7 @@ func (e *Experiment) Run() (interface{}, error) {
 		return nil, behaviorNotFound(e, controlBehavior)
 	}
 
-	return behavior()
+	return runBehavior(e, controlBehavior, behavior)
 }
 
 func (e *Experiment) Publish(fn func(Result) error) {

@@ -1,6 +1,7 @@
 package scientist
 
 import (
+	"errors"
 	"fmt"
 	"time"
 )
@@ -123,13 +124,31 @@ func observe(e *Experiment, name string, b behaviorFunc) Observation {
 		o.Runtime = time.Since(o.Started)
 		o.Err = behaviorNotFound(e, name)
 	} else {
-		v, err := b()
+		v, err := runBehavior(e, name, b)
 		o.Runtime = time.Since(o.Started)
 		o.Value = v
 		o.Err = err
 	}
 
 	return o
+}
+
+func runBehavior(e *Experiment, name string, b behaviorFunc) (value interface{}, err error) {
+	defer func() {
+		if er := recover(); er != nil {
+			value = nil
+			switch t := er.(type) {
+			case string:
+				err = errors.New(t)
+			case error:
+				err = t
+			default:
+				err = fmt.Errorf("%v", t)
+			}
+		}
+	}()
+	value, err = b()
+	return
 }
 
 type ResultError struct {
