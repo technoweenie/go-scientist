@@ -16,24 +16,18 @@ func New(name string) *Experiment {
 }
 
 type behaviorFunc func() (value interface{}, err error)
-type valueFunc func(control, candidate interface{}) (bool, error)
-type checkFunc func() (bool, error)
-type resultFunc func(Result) error
-type resultErrorFunc func(...ResultError)
-type callbackFunc func() error
-type cleanFunc func(interface{}) (interface{}, error)
 
 type Experiment struct {
 	Name          string
 	Context       map[string]string
 	behaviors     map[string]behaviorFunc
-	ignores       []valueFunc
-	comparator    valueFunc
-	runcheck      checkFunc
-	publisher     resultFunc
-	errorReporter resultErrorFunc
-	beforeRun     callbackFunc
-	cleaner       cleanFunc
+	ignores       []func(control, candidate interface{}) (bool, error)
+	comparator    func(control, candidate interface{}) (bool, error)
+	runcheck      func() (bool, error)
+	publisher     func(Result) error
+	errorReporter func(...ResultError)
+	beforeRun     func() error
+	cleaner       func(interface{}) (interface{}, error)
 }
 
 func (e *Experiment) Use(fn func() (interface{}, error)) {
@@ -45,27 +39,35 @@ func (e *Experiment) Try(fn func() (interface{}, error)) {
 }
 
 func (e *Experiment) Behavior(name string, fn func() (interface{}, error)) {
-	e.behaviors[name] = behaviorFunc(fn)
+	e.behaviors[name] = fn
 }
 
 func (e *Experiment) Compare(fn func(control, candidate interface{}) (bool, error)) {
-	e.comparator = valueFunc(fn)
+	e.comparator = fn
 }
 
 func (e *Experiment) Clean(fn func(v interface{}) (interface{}, error)) {
-	e.cleaner = cleanFunc(fn)
+	e.cleaner = fn
 }
 
 func (e *Experiment) Ignore(fn func(control, candidate interface{}) (bool, error)) {
-	e.ignores = append(e.ignores, valueFunc(fn))
+	e.ignores = append(e.ignores, fn)
 }
 
 func (e *Experiment) RunIf(fn func() (bool, error)) {
-	e.runcheck = checkFunc(fn)
+	e.runcheck = fn
 }
 
 func (e *Experiment) BeforeRun(fn func() error) {
-	e.beforeRun = callbackFunc(fn)
+	e.beforeRun = fn
+}
+
+func (e *Experiment) Publish(fn func(Result) error) {
+	e.publisher = fn
+}
+
+func (e *Experiment) ReportErrors(fn func(...ResultError)) {
+	e.errorReporter = fn
 }
 
 func (e *Experiment) Run() (interface{}, error) {
@@ -87,14 +89,6 @@ func (e *Experiment) Run() (interface{}, error) {
 	}
 
 	return runBehavior(e, controlBehavior, behavior)
-}
-
-func (e *Experiment) Publish(fn func(Result) error) {
-	e.publisher = resultFunc(fn)
-}
-
-func (e *Experiment) ReportErrors(fn func(...ResultError)) {
-	e.errorReporter = resultErrorFunc(fn)
 }
 
 func defaultComparator(candidate, control interface{}) (bool, error) {
