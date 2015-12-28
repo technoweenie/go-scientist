@@ -3,6 +3,7 @@ package scientist
 import (
 	"reflect"
 	"sort"
+	"strings"
 	"testing"
 )
 
@@ -49,7 +50,7 @@ func TestRun(t *testing.T) {
 	assertObservationNames(t, "ignored", r.Ignored, []string{})
 	assertObservationNames(t, "mismatched", r.Mismatched, []string{"candidate", "three"})
 
-	candidatesMap := make(map[string]Observation, len(r.Candidates))
+	candidatesMap := make(map[string]*Observation, len(r.Candidates))
 	for _, o := range r.Candidates {
 		candidatesMap[o.Name] = o
 	}
@@ -143,7 +144,44 @@ func TestCompareAndIgnore(t *testing.T) {
 	assertObservationNames(t, "mismatched", r.Mismatched, []string{"candidate"})
 }
 
-func assertObservationNames(t *testing.T, key string, obs []Observation, expected []string) {
+func TestDefaultCleaner(t *testing.T) {
+	e := New("cleaner")
+	e.Use(func() (interface{}, error) {
+		return "booya", nil
+	})
+	r := Run(e)
+
+	cleaned, err := r.Control.CleanedValue()
+	if err != nil {
+		t.Errorf("Unexpected cleaning error: %v", err)
+	}
+
+	if cleaned != "booya" {
+		t.Errorf("bad cleaned value: %v", cleaned)
+	}
+}
+
+func TestCustomCleaner(t *testing.T) {
+	e := New("cleaner")
+	e.Use(func() (interface{}, error) {
+		return "booya", nil
+	})
+	e.Clean(func(v interface{}) (interface{}, error) {
+		return strings.ToUpper(v.(string)), nil
+	})
+	r := Run(e)
+
+	cleaned, err := r.Control.CleanedValue()
+	if err != nil {
+		t.Errorf("Unexpected cleaning error: %v", err)
+	}
+
+	if cleaned != "BOOYA" {
+		t.Errorf("bad cleaned value: %v", cleaned)
+	}
+}
+
+func assertObservationNames(t *testing.T, key string, obs []*Observation, expected []string) {
 	actual := observationNames(obs)
 	if reflect.DeepEqual(expected, actual) {
 		return
@@ -152,7 +190,7 @@ func assertObservationNames(t *testing.T, key string, obs []Observation, expecte
 	t.Errorf("Expected %s observations: %v, got: %v", key, expected, actual)
 }
 
-func observationNames(obs []Observation) []string {
+func observationNames(obs []*Observation) []string {
 	names := make([]string, len(obs))
 	for i, o := range obs {
 		names[i] = o.Name

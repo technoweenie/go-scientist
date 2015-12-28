@@ -11,6 +11,7 @@ func New(name string) *Experiment {
 		publisher:     defaultPublisher,
 		errorReporter: defaultErrorReporter,
 		beforeRun:     defaultBeforeRun,
+		cleaner:       defaultCleaner,
 	}
 }
 
@@ -20,6 +21,7 @@ type checkFunc func() (bool, error)
 type resultFunc func(Result) error
 type resultErrorFunc func(...ResultError)
 type callbackFunc func() error
+type cleanFunc func(interface{}) (interface{}, error)
 
 type Experiment struct {
 	Name          string
@@ -31,6 +33,7 @@ type Experiment struct {
 	publisher     resultFunc
 	errorReporter resultErrorFunc
 	beforeRun     callbackFunc
+	cleaner       cleanFunc
 }
 
 func (e *Experiment) Use(fn func() (interface{}, error)) {
@@ -47,6 +50,10 @@ func (e *Experiment) Behavior(name string, fn func() (interface{}, error)) {
 
 func (e *Experiment) Compare(fn func(control, candidate interface{}) (bool, error)) {
 	e.comparator = valueFunc(fn)
+}
+
+func (e *Experiment) Clean(fn func(v interface{}) (interface{}, error)) {
+	e.cleaner = cleanFunc(fn)
 }
 
 func (e *Experiment) Ignore(fn func(control, candidate interface{}) (bool, error)) {
@@ -96,6 +103,10 @@ func defaultComparator(candidate, control interface{}) (bool, error) {
 
 func defaultRunCheck() (bool, error) {
 	return true, nil
+}
+
+func defaultCleaner(v interface{}) (interface{}, error) {
+	return v, nil
 }
 
 func defaultPublisher(r Result) error {
