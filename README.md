@@ -9,6 +9,10 @@ expr.Try(func() (interface{}, error) {
   return true, nil
 })
 
+expr.Behavior("candidate-2", func() (interface{}, error) {
+  return true, nil
+})
+
 expr.Compare(func(control, candidate interface{}) (bool, error) {
   return control == candidate, nil
 })
@@ -22,10 +26,19 @@ expr.Ignore(func(control, candidate interface{}) (bool, error) {
 })
 
 expr.RunIf(func() (bool, error) {
-
+  return true, nil
 })
 
-expr.SetContext("key", interface{})
+expr.Publish(func(r scientist.Result) error {
+  // post to graphite/librato/etc
+  return nil
+})
+
+expr.ReportErrors(func(errors ...scientist.ResultError) {
+  // post to error tracking service (sentry)
+})
+
+expr.Context["key"] = "value"
 
 value, err := expr.Run()
 ```
