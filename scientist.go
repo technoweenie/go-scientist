@@ -120,8 +120,8 @@ func observe(e *Experiment, name string, b behaviorFunc) Observation {
 	}
 
 	if b == nil {
-		o.Err = behaviorNotFound(e, name)
 		o.Runtime = time.Since(o.Started)
+		o.Err = behaviorNotFound(e, name)
 	} else {
 		v, err := b()
 		o.Runtime = time.Since(o.Started)
