@@ -19,10 +19,14 @@ func init() {
 }
 
 func main() {
+	includes(9999)
+}
+
+func includes(n int) (bool, error) {
 	e := scientist.New("set")
 	e.Use(func() (interface{}, error) {
 		for _, i := range arr {
-			if i == 9999 {
+			if i == n {
 				return true, nil
 			}
 		}
@@ -31,11 +35,25 @@ func main() {
 	})
 
 	e.Try(func() (interface{}, error) {
-		return set[9999], nil
+		return set[n], nil
 	})
 
+	e.Context["control"] = "array"
+	e.Context["candidate"] = "map"
+
 	e.Publish(publish)
-	e.Run()
+
+	ok, err := e.Run()
+	if err != nil {
+		return false, err
+	}
+
+	switch t := ok.(type) {
+	case bool:
+		return t, nil
+	default:
+		return false, fmt.Errorf("bad type: %v", ok)
+	}
 }
 
 func publish(r scientist.Result) error {
@@ -44,10 +62,14 @@ func publish(r scientist.Result) error {
 	for _, o := range r.Candidates {
 		publishObservation(o)
 	}
+	fmt.Println(" * Context:")
+	for key, value := range r.Experiment.Context {
+		fmt.Printf("   %q: %q\n", key, value)
+	}
 	return nil
 }
 
-func publishObservation(o scientist.Observation) {
+func publishObservation(o *scientist.Observation) {
 	fmt.Printf(" * %s\n", o.Name)
 	fmt.Printf("   value: %v\n", o.Value)
 	fmt.Printf("   err: %v\n", o.Err)

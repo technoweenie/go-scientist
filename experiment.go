@@ -5,6 +5,7 @@ import "reflect"
 func New(name string) *Experiment {
 	return &Experiment{
 		Name:          name,
+		Context:       make(map[string]string),
 		behaviors:     make(map[string]behaviorFunc),
 		comparator:    defaultComparator,
 		runcheck:      defaultRunCheck,
