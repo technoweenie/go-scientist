@@ -50,7 +50,7 @@ type Result struct {
 func Run(e *Experiment) Result {
 	r := Result{Experiment: e}
 	if err := e.beforeRun(); err != nil {
-		r.Errors = append(r.Errors, ResultError{"before_run", "experiment", -1, err})
+		r.Errors = append(r.Errors, e.resultErr("before_run", err))
 	}
 
 	numCandidates := len(e.behaviors) - 1
@@ -75,17 +75,17 @@ func Run(e *Experiment) Result {
 		mismatched, err := mismatching(e, r.Control, c)
 		if err != nil {
 			mismatched = true
-			r.Errors = append(r.Errors, ResultError{"compare", name, -1, err})
+			r.Errors = append(r.Errors, e.resultErr("compare", err))
 		}
 
 		if !mismatched {
 			continue
 		}
 
-		ignored, idx, err := ignoring(e, r.Control, c)
+		ignored, err := ignoring(e, r.Control, c)
 		if err != nil {
 			ignored = false
-			r.Errors = append(r.Errors, ResultError{"ignore", name, idx, err})
+			r.Errors = append(r.Errors, e.resultErr("ignore", err))
 		}
 
 		if ignored {
@@ -96,7 +96,7 @@ func Run(e *Experiment) Result {
 	}
 
 	if err := e.publisher(r); err != nil {
-		r.Errors = append(r.Errors, ResultError{"publish", "experiment", -1, err})
+		r.Errors = append(r.Errors, e.resultErr("publish", err))
 	}
 
 	if len(r.Errors) > 0 {
@@ -111,19 +111,19 @@ func mismatching(e *Experiment, control, candidate *Observation) (bool, error) {
 	return !matching, err
 }
 
-func ignoring(e *Experiment, control, candidate *Observation) (bool, int, error) {
-	for idx, i := range e.ignores {
+func ignoring(e *Experiment, control, candidate *Observation) (bool, error) {
+	for _, i := range e.ignores {
 		ok, err := i(control.Value, candidate.Value)
 		if err != nil {
-			return false, idx, err
+			return false, err
 		}
 
 		if ok {
-			return true, idx, nil
+			return true, nil
 		}
 	}
 
-	return false, -1, nil
+	return false, nil
 }
 
 func behaviorNotFound(e *Experiment, name string) error {
@@ -173,10 +173,9 @@ func runBehavior(e *Experiment, name string, b behaviorFunc) (value interface{},
 }
 
 type ResultError struct {
-	Operation    string
-	BehaviorName string
-	Index        int
-	Err          error
+	Operation  string
+	Experiment string
+	Err        error
 }
 
 func (e ResultError) Error() string {

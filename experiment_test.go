@@ -135,11 +135,8 @@ func TestExperimentRunIfError(t *testing.T) {
 			switch err.Operation {
 			case "run_if":
 				reported = true
-				if err.BehaviorName != "experiment" {
-					t.Errorf("Bad behavior name for run_if operation: %q", err.BehaviorName)
-				}
-				if err.Index != -1 {
-					t.Errorf("Bad index for run_if operation: %d", err.Index)
+				if err.Experiment != e.Name {
+					t.Errorf("Bad experiment name for %q operation: %q", err.Operation, err.Experiment)
 				}
 				if actual := err.Error(); actual != "run_if" {
 					t.Errorf("Bad error message for run_if operation: %q", actual)

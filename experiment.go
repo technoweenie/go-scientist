@@ -75,7 +75,7 @@ func (e *Experiment) Run() (interface{}, error) {
 	enabled, err := e.runcheck()
 	if err != nil {
 		enabled = true
-		e.errorReporter(ResultError{"run_if", "experiment", -1, err})
+		e.errorReporter(e.resultErr("run_if", err))
 		return nil, err
 	}
 
@@ -90,6 +90,10 @@ func (e *Experiment) Run() (interface{}, error) {
 	}
 
 	return runBehavior(e, controlBehavior, behavior)
+}
+
+func (e *Experiment) resultErr(name string, err error) ResultError {
+	return ResultError{name, e.Name, err}
 }
 
 func defaultComparator(candidate, control interface{}) (bool, error) {

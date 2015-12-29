@@ -82,44 +82,23 @@ func TestPublishWithErrors(t *testing.T) {
 	e.ReportErrors(func(errors ...ResultError) {
 		for _, err := range errors {
 			reported[err.Operation] = reported[err.Operation] + 1
+			if err.Experiment != e.Name {
+				t.Errorf("Bad experiment name for %q operation: %q", err.Operation, err.Experiment)
+			}
 			switch err.Operation {
 			case "compare":
-				if err.BehaviorName != "candidate" {
-					t.Errorf("Bad behavior name for compare operation: %q", err.BehaviorName)
-				}
-				if err.Index != -1 {
-					t.Errorf("Bad index for compare operation: %d", err.Index)
-				}
 				if actual := err.Error(); actual != "(compare) candidate: 2" {
 					t.Errorf("Bad error message for compare operation: %q", actual)
 				}
 			case "ignore":
-				if err.BehaviorName != "candidate" {
-					t.Errorf("Bad behavior name for ignore operation: %q", err.BehaviorName)
-				}
-				if err.Index != 1 {
-					t.Errorf("Bad index for ignore operation: %d", err.Index)
-				}
 				if actual := err.Error(); actual != "(ignore) candidate: 2" {
 					t.Errorf("Bad error message for ignore operation: %q", actual)
 				}
 			case "publish":
-				if err.BehaviorName != "experiment" {
-					t.Errorf("Bad behavior name for publish operation: %q", err.BehaviorName)
-				}
-				if err.Index != -1 {
-					t.Errorf("Bad index for publish operation: %d", err.Index)
-				}
 				if actual := err.Error(); actual != "(publish) result: publish" {
 					t.Errorf("Bad error message for publish operation: %q", actual)
 				}
 			case "before_run":
-				if err.BehaviorName != "experiment" {
-					t.Errorf("Bad behavior name for before_run operation: %q", err.BehaviorName)
-				}
-				if err.Index != -1 {
-					t.Errorf("Bad index for before_run operation: %d", err.Index)
-				}
 				if actual := err.Error(); actual != "(before)" {
 					t.Errorf("Bad error message for before_run operation: %q", actual)
 				}
