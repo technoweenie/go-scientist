@@ -25,7 +25,7 @@ type Widget struct {
   ...
 }
 
-func (w *Widget) Allows?(u *User) (bool, error) {
+func (w *Widget) Allows(u *User) (bool, error) {
   experiment := scientist.New("widget-permissions")
   // old way
   experiment.Use(func() (interface{}, error) {
@@ -33,7 +33,7 @@ func (w *Widget) Allows?(u *User) (bool, error) {
   })
   // new way
   experiment.Try(func() (interface{}, error) {
-    return u.Can?("read", w), nil
+    return u.Can("read", w), nil
   })
 
   return scientist.Bool(experiment.Run())
@@ -68,13 +68,13 @@ type Widget struct {
   ...
 }
 
-func (w *Widget) Allows?(u *User) (bool, error) {
+func (w *Widget) Allows(u *User) (bool, error) {
   experiment := Experiment("widget-permissions")
   experiment.Use(func() (interface{}, error) {
     return w.IsValid(u), nil
   })
   experiment.Try(func() (interface{}, error) {
-    u.Can?("read", w)
+    u.Can("read", w)
   })
 
   return scientist.Bool(experiment.Run())
@@ -110,13 +110,13 @@ errors.
 Scientist compares control and candidate values using `reflect.DeepEqual()`. To override this behavior, set a `Compare` callback to define how to compare observed values instead:
 
 ```go
-func (w *Widget) Allows?(u *User) (bool, error) {
+func (w *Widget) Allows(u *User) (bool, error) {
   experiment := Experiment("widget-permissions")
   experiment.Use(func() (interface{}, error) {
     return w.IsValid(u), nil
   })
   experiment.Try(func() (interface{}, error) {
-    u.Can?("read", w)
+    u.Can("read", w)
   })
 
   experiment.Compare(func(control, candidate interface{}) (bool, error) {
@@ -145,7 +145,7 @@ experiment.Use(func() (interface{}, error) {
   return w.IsValid(u), nil
 })
 experiment.Try(func() (interface{}, error) {
-  u.Can?("read", w)
+  u.Can("read", w)
 })
 experiment.Context["user"] = fmt.Sprintf("%d", user.Id)
 ```
@@ -166,7 +166,7 @@ experiment.BeforeRun(func() error {
   return nil
 })
 experiment.Try(func() (interface{}, error) {
-  u.Can?("read", w)
+  u.Can("read", w)
 })
 ```
 
@@ -174,13 +174,13 @@ experiment.Try(func() (interface{}, error) {
 
 Sometimes you don't want to store the full value for later analysis. For example, an experiment may return `User` instances, but when researching a mismatch, all you care about is the logins. You can define how to clean these values in an experiment:
 
-```ruby
+```go
 experiment := Experiment("widget-permissions")
 experiment.Use(func() (interface{}, error) {
   return w.IsValid(u), nil
 })
 experiment.Try(func() (interface{}, error) {
-  u.Can?("read", w)
+  u.Can("read", w)
 })
 
 experiment.Clean(func(value interface{}) (interface{}, error) {
@@ -218,7 +218,7 @@ func (w *Widget) IsAdmin(u *User) (bool, error) {
     return w.IsAdmin(u), nil
   })
   experiment.Try(func() (interface{}, error) {
-    u.Can?("admin", w)
+    u.Can("admin", w)
   })
 
   experiment.Ignore(func(control, candidate interface{}) (bool, error) {
