@@ -407,8 +407,6 @@ experiment.Behavior("raw-sql", func() (interface{}, error) {
 experiment.RunBehavior("second-way")
 ```
 
-TODO: Not implemented!
-
 ## Hacking
 
 Run `go fmt` before committing. `go test` runs the unit tests. The scientist

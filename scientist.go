@@ -47,14 +47,14 @@ type Result struct {
 	Errors       []ResultError
 }
 
-func Run(e *Experiment) Result {
+func Run(e *Experiment, name string) Result {
 	r := Result{Experiment: e}
 	if err := e.beforeRun(); err != nil {
 		r.Errors = append(r.Errors, e.resultErr("before_run", err))
 	}
 
 	numCandidates := len(e.behaviors) - 1
-	r.Control = observe(e, controlBehavior, e.behaviors[controlBehavior])
+	r.Control = observe(e, name, e.behaviors[name])
 	r.Candidates = make([]*Observation, numCandidates)
 	r.Ignored = make([]*Observation, 0, numCandidates)
 	r.Mismatched = make([]*Observation, 0, numCandidates)
@@ -62,12 +62,12 @@ func Run(e *Experiment) Result {
 	r.Observations[0] = r.Control
 
 	i := 0
-	for name, b := range e.behaviors {
-		if name == controlBehavior {
+	for bname, b := range e.behaviors {
+		if bname == name {
 			continue
 		}
 
-		c := observe(e, name, b)
+		c := observe(e, bname, b)
 		r.Candidates[i] = c
 		i += 1
 		r.Observations[i] = c

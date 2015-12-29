@@ -72,6 +72,10 @@ func (e *Experiment) ReportErrors(fn func(...ResultError)) {
 }
 
 func (e *Experiment) Run() (interface{}, error) {
+	return e.RunBehavior(controlBehavior)
+}
+
+func (e *Experiment) RunBehavior(name string) (interface{}, error) {
 	enabled, err := e.runcheck()
 	if err != nil {
 		enabled = true
@@ -80,16 +84,16 @@ func (e *Experiment) Run() (interface{}, error) {
 	}
 
 	if enabled && len(e.behaviors) > 1 {
-		r := Run(e)
+		r := Run(e, name)
 		return r.Control.Value, r.Control.Err
 	}
 
-	behavior, ok := e.behaviors[controlBehavior]
+	behavior, ok := e.behaviors[name]
 	if !ok {
-		return nil, behaviorNotFound(e, controlBehavior)
+		return nil, behaviorNotFound(e, name)
 	}
 
-	return runBehavior(e, controlBehavior, behavior)
+	return runBehavior(e, name, behavior)
 }
 
 func (e *Experiment) resultErr(name string, err error) ResultError {
