@@ -19,7 +19,13 @@ func init() {
 }
 
 func main() {
-	includes(9999)
+	ok, err := includes(9999)
+	if err != nil {
+		fmt.Printf("experiment error: %q\n", err)
+		return
+	}
+
+	fmt.Printf("The arbitrary example returned: %v (%T)\n", ok, ok)
 }
 
 func includes(n int) (bool, error) {
@@ -43,17 +49,7 @@ func includes(n int) (bool, error) {
 
 	e.Publish(publish)
 
-	ok, err := e.Run()
-	if err != nil {
-		return false, err
-	}
-
-	switch t := ok.(type) {
-	case bool:
-		return t, nil
-	default:
-		return false, fmt.Errorf("bad type: %v", ok)
-	}
+	return scientist.Bool(e.Run())
 }
 
 func publish(r scientist.Result) error {
