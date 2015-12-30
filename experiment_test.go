@@ -1,7 +1,6 @@
 package scientist
 
 import (
-	"errors"
 	"fmt"
 	"testing"
 )
@@ -280,71 +279,5 @@ func TestExperimentRunIfError(t *testing.T) {
 
 	if !reported {
 		t.Errorf("result errors never reported!")
-	}
-}
-
-type testStringer struct {
-	output string
-}
-
-func (s testStringer) String() string {
-	return s.output
-}
-
-func TestRecoverCandidatePanic(t *testing.T) {
-	e := New("recover")
-	e.Use(func() (interface{}, error) {
-		return 1, nil
-	})
-
-	e.Try(func() (interface{}, error) {
-		panic("candidate")
-	})
-
-	e.Behavior("two", func() (interface{}, error) {
-		panic(errors.New("candidate"))
-	})
-
-	e.Behavior("three", func() (interface{}, error) {
-		panic(testStringer{"candidate"})
-	})
-
-	e.ReportErrors(func(errors ...ResultError) {
-		for _, e := range errors {
-			t.Errorf("unexpected experiment error: %v", e)
-		}
-	})
-
-	published := false
-	e.Publish(func(r Result) error {
-		published = true
-		for _, c := range r.Candidates {
-			if c.Value != nil {
-				t.Errorf("Unexpected candidate %q value: %v", c.Name, c.Value)
-			}
-
-			if c.Err == nil {
-				t.Errorf("expected candidate %q panic err!", c.Name)
-			}
-
-			if msg := c.Err.Error(); msg != "candidate" {
-				t.Errorf("bad candidate %q error: %v", c.Name, msg)
-			}
-		}
-
-		return nil
-	})
-
-	v, err := e.Run()
-	if v != 1 {
-		t.Errorf("Unexpected control value: %d", v)
-	}
-
-	if err != nil {
-		t.Errorf("Unexpected control error: %v", err)
-	}
-
-	if !published {
-		t.Errorf("results never published")
 	}
 }

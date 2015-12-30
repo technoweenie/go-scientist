@@ -106,7 +106,7 @@ func (e *Experiment) RunBehavior(name string) (interface{}, error) {
 		return nil, behaviorNotFound(e, name)
 	}
 
-	return runBehavior(e, name, behavior)
+	return behavior()
 }
 
 func (e *Experiment) resultErr(name string, err error) ResultError {

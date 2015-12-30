@@ -46,14 +46,19 @@ Write a `Use` callback around the code's original behavior, and a `Try` around t
 * Randomizes the order in which `Use` and `Try` callbacks are run,
 * Measures the durations of all behaviors,
 * Compares the result of `Try` to the result of `Use`,
-* Swallows (but records) any errors or panics in the `Try` callback, and
+* Swallows (but records) any errors in the `Try` callback, and
 * Publishes all this information.
 
 The `Use` callback is called the **control**. The `Try` callback is called the **candidate**.
 
-NOTE: mention helpers like scientist.Bool()
+TODO: mention helpers like scientist.Bool()
 
 If you don't declare any `Try` callbacks, none of the Scientist machinery is invoked and the control value is always returned.
+
+Experiments do not attempt to recover from any runtime panics, and are not
+goroutine safe. Any `*scientist.Experiment` objects should be Run and discarded
+immediately after being initialized. Ideally, your application should already
+handle any runtime panics somehow.
 
 ## Making science useful
 
