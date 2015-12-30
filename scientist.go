@@ -86,13 +86,13 @@ func Run(e *Experiment, name string) Result {
 		i += 1
 		r.Observations[i] = c
 
-		mismatched, err := mismatching(e, r.Control, c)
+		ok, err := matching(e, r.Control, c)
 		if err != nil {
-			mismatched = true
+			ok = false
 			r.Errors = append(r.Errors, e.resultErr("compare", err))
 		}
 
-		if !mismatched {
+		if ok {
 			continue
 		}
 
@@ -120,9 +120,19 @@ func Run(e *Experiment, name string) Result {
 	return r
 }
 
-func mismatching(e *Experiment, control, candidate *Observation) (bool, error) {
-	matching, err := e.comparator(control.Value, candidate.Value)
-	return !matching, err
+func matching(e *Experiment, control, candidate *Observation) (bool, error) {
+	// neither returned errors
+	if control.Err == nil && candidate.Err == nil {
+		return e.comparator(control.Value, candidate.Value)
+	}
+
+	// both returned errors
+	if control.Err != nil && candidate.Err != nil {
+		return control.Err.Error() == candidate.Err.Error(), nil
+	}
+
+	// returned different errors
+	return false, nil
 }
 
 func ignoring(e *Experiment, control, candidate *Observation) (bool, error) {

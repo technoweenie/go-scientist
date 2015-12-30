@@ -367,8 +367,6 @@ experiment.Compare(func(control, candidate interface{}) (bool, error) {
 
 This will still log mismatches if any errors are returned, but will disregard the values entirely.
 
-TODO: Confirm with unit test!
-
 ### Trying more than one thing
 
 It's not usually a good idea to try more than one alternative simultaneously. Behavior isn't guaranteed to be isolated and reporting + visualization get quite a bit harder. Still, it's sometimes useful.

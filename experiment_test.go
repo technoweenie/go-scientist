@@ -1,6 +1,7 @@
 package scientist
 
 import (
+	"errors"
 	"fmt"
 	"testing"
 )
@@ -279,5 +280,116 @@ func TestExperimentRunIfError(t *testing.T) {
 
 	if !reported {
 		t.Errorf("result errors never reported!")
+	}
+}
+
+func TestExperimentSkipCompareMismatchedValues(t *testing.T) {
+	e := New("ignore")
+	e.Use(func() (interface{}, error) {
+		return 1, nil
+	})
+	e.Try(func() (interface{}, error) {
+		return 2, nil
+	})
+	e.Compare(func(control, candidate interface{}) (bool, error) {
+		return true, nil
+	})
+
+	published := false
+	e.Publish(func(r Result) error {
+		published = true
+
+		if r.IsMismatched() {
+			t.Errorf("Should not be matching")
+		}
+
+		return nil
+	})
+
+	v, err := e.Run()
+	if v != 1 {
+		t.Errorf("Unexpected control value: %d", v)
+	}
+
+	if err != nil {
+		t.Errorf("Unexpected control error: %v", err)
+	}
+
+	if !published {
+		t.Errorf("results never published")
+	}
+}
+
+func TestExperimentSkipCompareMismatchedErrors(t *testing.T) {
+	e := New("ignore")
+	e.Use(func() (interface{}, error) {
+		return 1, nil
+	})
+	e.Try(func() (interface{}, error) {
+		return 1, errors.New("try")
+	})
+	e.Compare(func(control, candidate interface{}) (bool, error) {
+		return true, nil
+	})
+
+	published := false
+	e.Publish(func(r Result) error {
+		published = true
+
+		if r.IsMatched() {
+			t.Errorf("Should be mismatched")
+		}
+
+		return nil
+	})
+
+	v, err := e.Run()
+	if v != 1 {
+		t.Errorf("Unexpected control value: %d", v)
+	}
+
+	if err != nil {
+		t.Errorf("Unexpected control error: %v", err)
+	}
+
+	if !published {
+		t.Errorf("results never published")
+	}
+}
+
+func TestExperimentSkipCompareSameErrors(t *testing.T) {
+	e := New("ignore")
+	e.Use(func() (interface{}, error) {
+		return 1, errors.New("ok")
+	})
+	e.Try(func() (interface{}, error) {
+		return 1, errors.New("ok")
+	})
+	e.Compare(func(control, candidate interface{}) (bool, error) {
+		return true, nil
+	})
+
+	published := false
+	e.Publish(func(r Result) error {
+		published = true
+
+		if r.IsMismatched() {
+			t.Errorf("Should be matching")
+		}
+
+		return nil
+	})
+
+	v, err := e.Run()
+	if v != 1 {
+		t.Errorf("Unexpected control value: %d", v)
+	}
+
+	if err == nil || err.Error() != "ok" {
+		t.Errorf("Unexpected control error: %v", err)
+	}
+
+	if !published {
+		t.Errorf("results never published")
 	}
 }
