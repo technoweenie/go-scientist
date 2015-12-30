@@ -1,6 +1,10 @@
 package scientist
 
-import "reflect"
+import (
+	"fmt"
+	"os"
+	"reflect"
+)
 
 var ErrorOnMismatches bool
 
@@ -125,7 +129,10 @@ func defaultPublisher(r Result) error {
 	return nil
 }
 
-func defaultErrorReporter(errors ...ResultError) {
+func defaultErrorReporter(errs ...ResultError) {
+	for _, err := range errs {
+		fmt.Fprintf(os.Stderr, "[scientist] error during %q for %q experiment: (%T) %v\n", err.Operation, err.Experiment, err.Err, err.Err)
+	}
 }
 
 func defaultBeforeRun() error {

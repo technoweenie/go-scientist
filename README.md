@@ -94,7 +94,7 @@ func Experiment(name string) *scientist.Experiment {
     return nil
   })
 
-  experiment.ReportErrors(func(errors ...scientist.ResultError) {
+  experiment.ReportErrors(func(errs ...scientist.ResultError) {
     // post to sentry or other error reporting tool
   })
   return experiment
@@ -310,14 +310,12 @@ match.
 
 ### Handling errors
 
-If an exception is raised within any of scientist's internal callbacks, like `Publish`, `Compare`, or `Clean`, the `RaiseErrors` method is called with a slice of errors, each containing the string name of the internal operation that failed and the error that was returned. The default behavior is to simply ignore the error. Since this is terrible, it's often a better idea to handle this callback.
-
-TODO: Log errors to stderr by default
+If an exception is raised within any of scientist's internal callbacks, like `Publish`, `Compare`, or `Clean`, the `ReportErrors` method is called with a slice of errors, each containing the string name of the internal operation that failed and the error that was returned. The default behavior is to dump the errors to STDERR.
 
 ```go
 experiment := Experiment("widget-permissions")
-experiment.RaiseErrors(func(errors ...scientist.ResultError) {
-  for _, resErr := range errors {
+experiment.ReportErrors(func(errs ...scientist.ResultError) {
+  for _, resErr := range errs {
     errortracker.Track(resErr.Err, "science failure in %s: %s", resErr.Experiment, resErr.Operation)
   }
 })
