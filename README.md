@@ -286,20 +286,27 @@ experiment.Publish(func(r scientist.Result) error {
 
 ### Testing
 
-When running your test suite, it's helpful to know that the experimental results always match. To help with testing, Scientist defines a `raise_on_mismatches` class attribute when you include `Scientist::Experiment`. Only do this in your test suite!
+When running your test suite, it's helpful to know that the experimental results always match. To help with testing, Scientist has a ErrorOnMismatches bool value
+to set either on the `scientist` package, or on a `*scientist.Experiment`:
 
 To raise on mismatches:
 
-```ruby
-class MyExperiment
-  include Scientist::Experiment
-  # ... implementation
-end
+```go
+// do this in a *_test.go file so it's set on tests only
+import "scientist"
 
-MyExperiment.raise_on_mismatches = true
+func init() {
+  scientist.ErrorOnMismatches = true
+}
+
+// or enable it for a specific experiment only
+experiment := scientist.New("something")
+experiment.ErrorOnMismatches = true
+// ... implementation
 ```
 
-Scientist will raise a `Scientist::Experiment::MismatchError` exception if any observations don't match.
+Scientist will raise a `scientist.MismatchError` error if any observations don't
+match.
 
 ### Handling errors
 

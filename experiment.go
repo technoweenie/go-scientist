@@ -2,33 +2,37 @@ package scientist
 
 import "reflect"
 
+var ErrorOnMismatches bool
+
 func New(name string) *Experiment {
 	return &Experiment{
-		Name:          name,
-		Context:       make(map[string]string),
-		behaviors:     make(map[string]behaviorFunc),
-		comparator:    defaultComparator,
-		runcheck:      defaultRunCheck,
-		publisher:     defaultPublisher,
-		errorReporter: defaultErrorReporter,
-		beforeRun:     defaultBeforeRun,
-		cleaner:       defaultCleaner,
+		Name:              name,
+		Context:           make(map[string]string),
+		ErrorOnMismatches: ErrorOnMismatches,
+		behaviors:         make(map[string]behaviorFunc),
+		comparator:        defaultComparator,
+		runcheck:          defaultRunCheck,
+		publisher:         defaultPublisher,
+		errorReporter:     defaultErrorReporter,
+		beforeRun:         defaultBeforeRun,
+		cleaner:           defaultCleaner,
 	}
 }
 
 type behaviorFunc func() (value interface{}, err error)
 
 type Experiment struct {
-	Name          string
-	Context       map[string]string
-	behaviors     map[string]behaviorFunc
-	ignores       []func(control, candidate interface{}) (bool, error)
-	comparator    func(control, candidate interface{}) (bool, error)
-	runcheck      func() (bool, error)
-	publisher     func(Result) error
-	errorReporter func(...ResultError)
-	beforeRun     func() error
-	cleaner       func(interface{}) (interface{}, error)
+	Name              string
+	Context           map[string]string
+	ErrorOnMismatches bool
+	behaviors         map[string]behaviorFunc
+	ignores           []func(control, candidate interface{}) (bool, error)
+	comparator        func(control, candidate interface{}) (bool, error)
+	runcheck          func() (bool, error)
+	publisher         func(Result) error
+	errorReporter     func(...ResultError)
+	beforeRun         func() error
+	cleaner           func(interface{}) (interface{}, error)
 }
 
 func (e *Experiment) Use(fn func() (interface{}, error)) {
@@ -85,6 +89,11 @@ func (e *Experiment) RunBehavior(name string) (interface{}, error) {
 
 	if enabled && len(e.behaviors) > 1 {
 		r := Run(e, name)
+
+		if r.Control.Err == nil && e.ErrorOnMismatches && r.IsMismatched() {
+			return nil, MismatchError{r}
+		}
+
 		return r.Control.Value, r.Control.Err
 	}
 

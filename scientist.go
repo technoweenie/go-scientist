@@ -47,6 +47,21 @@ type Result struct {
 	Errors       []ResultError
 }
 
+func (r Result) IsMatched() bool {
+	if r.IsMismatched() || r.IsIgnored() {
+		return false
+	}
+	return true
+}
+
+func (r Result) IsMismatched() bool {
+	return len(r.Mismatched) > 0
+}
+
+func (r Result) IsIgnored() bool {
+	return len(r.Ignored) > 0
+}
+
 func Run(e *Experiment, name string) Result {
 	r := Result{Experiment: e}
 	if err := e.beforeRun(); err != nil {
@@ -180,4 +195,12 @@ type ResultError struct {
 
 func (e ResultError) Error() string {
 	return e.Err.Error()
+}
+
+type MismatchError struct {
+	Result Result
+}
+
+func (e MismatchError) Error() string {
+	return fmt.Sprintf("[scientist] experiment %q observations mismatched", e.Result.Experiment.Name)
 }

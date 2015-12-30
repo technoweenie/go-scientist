@@ -6,6 +6,122 @@ import (
 	"testing"
 )
 
+func TestExperimentMatch(t *testing.T) {
+	e := New("match")
+	e.Use(func() (interface{}, error) {
+		return 1, nil
+	})
+	e.Try(func() (interface{}, error) {
+		return 1, nil
+	})
+
+	published := false
+	e.Publish(func(r Result) error {
+		published = true
+
+		if !r.IsMatched() || r.IsMismatched() {
+			t.Errorf("not matched")
+		}
+
+		if r.IsIgnored() {
+			t.Errorf("ignored")
+		}
+
+		return nil
+	})
+
+	v, err := e.Run()
+	if v != 1 {
+		t.Errorf("Unexpected control value: %d", v)
+	}
+
+	if err != nil {
+		t.Errorf("Unexpected control error: %v", err)
+	}
+
+	if !published {
+		t.Errorf("expected Publish callback to run")
+	}
+}
+
+func TestExperimentMismatchNoReturn(t *testing.T) {
+	e := New("match")
+	e.Use(func() (interface{}, error) {
+		return 1, nil
+	})
+	e.Try(func() (interface{}, error) {
+		return 2, nil
+	})
+
+	published := false
+	e.Publish(func(r Result) error {
+		published = true
+
+		if r.IsMatched() || !r.IsMismatched() {
+			t.Errorf("matched???")
+		}
+
+		if r.IsIgnored() {
+			t.Errorf("ignored")
+		}
+
+		return nil
+	})
+
+	v, err := e.Run()
+	if v != 1 {
+		t.Errorf("Unexpected control value: %d", v)
+	}
+
+	if err != nil {
+		t.Errorf("Unexpected control error: %v", err)
+	}
+
+	if !published {
+		t.Errorf("expected Publish callback to run")
+	}
+}
+
+func TestExperimentMismatchWithReturn(t *testing.T) {
+	e := New("match")
+	e.Use(func() (interface{}, error) {
+		return 1, nil
+	})
+	e.Try(func() (interface{}, error) {
+		return 2, nil
+	})
+
+	e.ErrorOnMismatches = true
+
+	published := false
+	e.Publish(func(r Result) error {
+		published = true
+
+		if r.IsMatched() || !r.IsMismatched() {
+			t.Errorf("matched???")
+		}
+
+		if r.IsIgnored() {
+			t.Errorf("ignored")
+		}
+
+		return nil
+	})
+
+	v, err := e.Run()
+	if v != nil {
+		t.Errorf("Unexpected control value: %v (%T)", v, v)
+	}
+
+	if _, ok := err.(MismatchError); !ok {
+		t.Errorf("Unexpected control error: %v", err)
+	}
+
+	if !published {
+		t.Errorf("expected Publish callback to run")
+	}
+}
+
 func TestExperimentRunBefore(t *testing.T) {
 	runIf := false
 	before := false
