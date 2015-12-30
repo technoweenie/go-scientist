@@ -60,6 +60,27 @@ goroutine safe. Any `*scientist.Experiment` objects should be Run and discarded
 immediately after being initialized. Ideally, your application should already
 handle any runtime panics somehow.
 
+All science experiment callbacks return generic `interface{}` objects, which
+may be inconvenient for your application. Scientist comes with some helpers,
+like `scientist.Bool()` that attempt to cast the values to common types. If it
+can't be casted, `nil` is returned, along with an error. Your application can
+define a similar helper for custom types:
+
+```go
+func User(value interface{}, err error) (*User, error) {
+	if err != nil {
+		return false, err
+	}
+
+	switch t := value.(type) {
+	case *User:
+		return t, nil
+	default:
+		return false, fmt.Errorf("[scientist] bad result type: %v (%T)", value, value)
+	}
+}
+```
+
 ## Making science useful
 
 The examples above will run, but they're not really *doing* anything. The `Try` callbacks run every time and none of the results get published. Replace the default experiment implementation to control execution and reporting:
