@@ -1,16 +1,17 @@
 package scientist
 
 import (
+	"context"
 	"fmt"
 	"testing"
 )
 
 func TestPublish(t *testing.T) {
 	e := New("publish")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 2, nil
 	})
 
@@ -31,7 +32,7 @@ func TestPublish(t *testing.T) {
 		t.Errorf("result errors reported :(")
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
@@ -51,10 +52,10 @@ func TestPublish(t *testing.T) {
 
 func TestPublishWithErrors(t *testing.T) {
 	e := New("publish")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 2, nil
 	})
 	e.BeforeRun(func() error {
@@ -108,7 +109,7 @@ func TestPublishWithErrors(t *testing.T) {
 		}
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}

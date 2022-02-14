@@ -1,6 +1,7 @@
 package scientist
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"testing"
@@ -8,10 +9,10 @@ import (
 
 func TestExperimentMatch(t *testing.T) {
 	e := New("match")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
 
@@ -30,7 +31,7 @@ func TestExperimentMatch(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
@@ -46,10 +47,10 @@ func TestExperimentMatch(t *testing.T) {
 
 func TestExperimentMismatchNoReturn(t *testing.T) {
 	e := New("match")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 2, nil
 	})
 
@@ -68,7 +69,7 @@ func TestExperimentMismatchNoReturn(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
@@ -84,10 +85,10 @@ func TestExperimentMismatchNoReturn(t *testing.T) {
 
 func TestExperimentMismatchWithReturn(t *testing.T) {
 	e := New("match")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 2, nil
 	})
 
@@ -108,7 +109,7 @@ func TestExperimentMismatchWithReturn(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != nil {
 		t.Errorf("Unexpected control value: %v (%T)", v, v)
 	}
@@ -127,10 +128,10 @@ func TestExperimentRunBefore(t *testing.T) {
 	before := false
 
 	e := New("run")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
 
@@ -144,7 +145,7 @@ func TestExperimentRunBefore(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
@@ -166,10 +167,10 @@ func TestExperimentDisabledRunBefore(t *testing.T) {
 	runIf := false
 
 	e := New("run")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
 
@@ -183,7 +184,7 @@ func TestExperimentDisabledRunBefore(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
@@ -201,7 +202,7 @@ func TestExperimentEmptyRunBefore(t *testing.T) {
 	runIf := false
 
 	e := New("run")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
 
@@ -215,7 +216,7 @@ func TestExperimentEmptyRunBefore(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
@@ -232,11 +233,11 @@ func TestExperimentEmptyRunBefore(t *testing.T) {
 func TestExperimentRunIfError(t *testing.T) {
 	reported := false
 	e := New("run")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
 
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		t.Errorf("did not expect to run experiment if RunIf() returns error")
 		return 1, nil
 	})
@@ -267,7 +268,7 @@ func TestExperimentRunIfError(t *testing.T) {
 		return true, fmt.Errorf("run_if")
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != nil {
 		t.Errorf("unexpected result: %v", v)
 	}
@@ -285,10 +286,10 @@ func TestExperimentRunIfError(t *testing.T) {
 
 func TestExperimentSkipCompareMismatchedValues(t *testing.T) {
 	e := New("ignore")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 2, nil
 	})
 	e.Compare(func(control, candidate interface{}) (bool, error) {
@@ -306,7 +307,7 @@ func TestExperimentSkipCompareMismatchedValues(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
@@ -322,10 +323,10 @@ func TestExperimentSkipCompareMismatchedValues(t *testing.T) {
 
 func TestExperimentSkipCompareMismatchedErrors(t *testing.T) {
 	e := New("ignore")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 1, errors.New("try")
 	})
 	e.Compare(func(control, candidate interface{}) (bool, error) {
@@ -343,7 +344,7 @@ func TestExperimentSkipCompareMismatchedErrors(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
@@ -359,10 +360,10 @@ func TestExperimentSkipCompareMismatchedErrors(t *testing.T) {
 
 func TestExperimentSkipCompareSameErrors(t *testing.T) {
 	e := New("ignore")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, errors.New("ok")
 	})
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 1, errors.New("ok")
 	})
 	e.Compare(func(control, candidate interface{}) (bool, error) {
@@ -380,7 +381,7 @@ func TestExperimentSkipCompareSameErrors(t *testing.T) {
 		return nil
 	})
 
-	v, err := e.Run()
+	v, err := e.Run(context.Background())
 	if v != 1 {
 		t.Errorf("Unexpected control value: %d", v)
 	}
