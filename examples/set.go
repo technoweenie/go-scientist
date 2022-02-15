@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/technoweenie/go-scientist"
+	"github.com/Sreevani871/go-scientist"
 )
 
 var (
