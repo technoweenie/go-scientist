@@ -1,6 +1,7 @@
 package scientist
 
 import (
+	"context"
 	"reflect"
 	"sort"
 	"strings"
@@ -9,19 +10,19 @@ import (
 
 func basicExperiment() *Experiment {
 	e := New("basic")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
 
-	e.Try(func() (interface{}, error) {
+	e.Try(func(ctx context.Context) (interface{}, error) {
 		return 2, nil
 	})
 
-	e.Behavior("three", func() (interface{}, error) {
+	e.Behavior("three", func(ctx context.Context) (interface{}, error) {
 		return 3, nil
 	})
 
-	e.Behavior("correct", func() (interface{}, error) {
+	e.Behavior("correct", func(ctx context.Context) (interface{}, error) {
 		return 1, nil
 	})
 	return e
@@ -29,7 +30,7 @@ func basicExperiment() *Experiment {
 
 func TestRun(t *testing.T) {
 	e := basicExperiment()
-	r := Run(e, "control")
+	r := Run(context.Background(), e, "control")
 	if len(r.Errors) != 0 {
 		t.Errorf("Unexpected experiment errors: %v", r.Errors)
 	}
@@ -100,7 +101,7 @@ func TestIgnore(t *testing.T) {
 	e.Ignore(func(control, candidate interface{}) (bool, error) {
 		return candidate == 3, nil
 	})
-	r := Run(e, "control")
+	r := Run(context.Background(), e, "control")
 	if len(r.Errors) != 0 {
 		t.Errorf("Unexpected experiment errors: %v", r.Errors)
 	}
@@ -116,7 +117,7 @@ func TestCompare(t *testing.T) {
 		return control == 1 && candidate == 3, nil
 	})
 
-	r := Run(e, "control")
+	r := Run(context.Background(), e, "control")
 	if len(r.Errors) != 0 {
 		t.Errorf("Unexpected experiment errors: %v", r.Errors)
 	}
@@ -134,7 +135,7 @@ func TestCompareAndIgnore(t *testing.T) {
 	e.Ignore(func(control, candidate interface{}) (bool, error) {
 		return candidate == 1, nil
 	})
-	r := Run(e, "control")
+	r := Run(context.Background(), e, "control")
 	if len(r.Errors) != 0 {
 		t.Errorf("Unexpected experiment errors: %v", r.Errors)
 	}
@@ -146,10 +147,10 @@ func TestCompareAndIgnore(t *testing.T) {
 
 func TestDefaultCleaner(t *testing.T) {
 	e := New("cleaner")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return "booya", nil
 	})
-	r := Run(e, "control")
+	r := Run(context.Background(), e, "control")
 
 	cleaned, err := r.Control.CleanedValue()
 	if err != nil {
@@ -163,13 +164,13 @@ func TestDefaultCleaner(t *testing.T) {
 
 func TestCustomCleaner(t *testing.T) {
 	e := New("cleaner")
-	e.Use(func() (interface{}, error) {
+	e.Use(func(ctx context.Context) (interface{}, error) {
 		return "booya", nil
 	})
 	e.Clean(func(v interface{}) (interface{}, error) {
 		return strings.ToUpper(v.(string)), nil
 	})
-	r := Run(e, "control")
+	r := Run(context.Background(), e, "control")
 
 	cleaned, err := r.Control.CleanedValue()
 	if err != nil {
